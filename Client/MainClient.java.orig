@@ -1,0 +1,303 @@
+package Client;
+
+import javax.swing.*;
+
+import java.awt.Dimension;
+import java.awt.GridLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.net.Socket;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+
+//This will allow the user to connect with the Server, it will then open a login Windo
+public class MainClient extends Thread {
+    int port;
+	private String host;
+	private Socket s;
+	private ObjectOutputStream oos = null;
+	private ObjectInputStream ois = null;
+	private static MainClient client;
+	private static LogIn login;
+	
+	// GUI variables
+	private JFrame popup;
+	private JLabel ipLabel, portLabel, title;
+	private JTextField ipField, portField;
+	private JPanel titlePanel, ipPanel, portPanel, confirmPanel;
+	private JButton confirmButton;
+	
+   private Lock lock = new ReentrantLock();
+	// Have a Lock everytime on reads from the The Object Input Stream
+	
+	public MainClient() {
+		//Create GUI that gets Localhost
+		//Also gets a por
+		
+		insVar();
+		makeTheFuckingGUI();
+		popup.setVisible(true);
+		
+		confirmButton.addActionListener(new ActionListener() {
+			
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				host = ipField.getText();
+				port = Integer.parseInt(portField.getText());
+				MainClient.this.start();
+				login = new LogIn(MainClient.this);
+				login.setVisible(true);
+				popup.setVisible(false);
+			}
+		});
+		
+	}
+
+	private void makeTheFuckingGUI() {
+		popup.setSize(350,250);
+		popup.setLocation(300,100);
+		popup.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+		popup.setLayout(new GridLayout(4, 1));
+		
+		popup.add(titlePanel);
+		popup.add(ipPanel);
+		popup.add(portPanel);
+		popup.add(confirmPanel);
+	}
+
+	private void insVar() {
+		popup = new JFrame("Thing-a-doo!!1!!!");
+		title = new JLabel("Welcome to Thing-a-doo!");
+		ipLabel = new JLabel("IP:");
+		portLabel = new JLabel("Port:");
+		ipField = new JTextField();
+		portField = new JTextField();
+		ipPanel = new JPanel();
+		portPanel = new JPanel();
+		confirmPanel = new JPanel();
+		titlePanel = new JPanel();
+		confirmButton = new JButton("Confirm");
+		setUpPanels();
+	}
+
+	private void setUpPanels() {
+		ipPanel.add(ipLabel);
+		ipField.setPreferredSize( new Dimension( 200, 30 ) );
+		ipPanel.add(ipField);
+		portPanel.add(portLabel);
+		portField.setPreferredSize( new Dimension( 190, 30 ) );
+		portPanel.add(portField);
+		titlePanel.add(title);
+		confirmPanel.setLayout(new BoxLayout(confirmPanel, BoxLayout.X_AXIS));
+		confirmPanel.add(Box.createHorizontalGlue());
+		confirmPanel.add(confirmButton);
+		confirmPanel.add(Box.createHorizontalGlue());
+	}
+
+	public static void main(String[] args) {
+		client = new MainClient();
+	}
+	
+	public void run() {
+		try {
+			System.out.println(host+ " " + port);
+			s = new Socket(host, port);
+			oos = new ObjectOutputStream(s.getOutputStream());
+			ois = new ObjectInputStream(s.getInputStream());
+			Object obj = ois.readObject();
+			while (true) {
+				//the lock is so Notfications and requests for information don't get screw up
+				lock.lock();
+				obj = ois.readObject();
+				if (obj instanceof MessageObject) {
+					//Handle Reciving a Message Here
+					//THIS IS GOING TO BE FUCKING HARD!
+				}
+				lock.unlock();
+			}
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (ClassNotFoundException nfe) {
+			nfe.printStackTrace();
+		}
+
+	}
+	
+	public void send(Object obj) {
+		if (oos == null){
+			System.out.println("oos is null");
+		}
+		if (obj == null){
+			System.out.println("obj is null");
+		}
+		try {
+			oos.writeObject(obj);
+			oos.flush();
+		} catch (IOException e) {
+			System.out.println("IOE in MainClient Writing: " + e.getMessage());
+			e.printStackTrace();
+		}
+
+	}
+	
+	public User getUser(String name) {
+		User u = new User(name);
+		lock.lock();
+		send(u);
+		Object obj = null;
+		try {
+			obj = ois.readObject();
+			lock.unlock();
+		} catch (ClassNotFoundException | IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		lock.unlock();
+		if (obj instanceof User) {
+			return (User)obj;
+		}
+		else {
+			return null;
+		}
+
+	}
+	
+	//Will return null if Activty does not exsist
+	public Activity getActivity(int id) {
+		
+		Activity a = new Activity(id);
+		lock.lock();
+		send(a);
+		Object obj = null;
+		try {
+			obj = ois.readObject();
+			lock.unlock();
+		} catch (ClassNotFoundException | IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		if (obj instanceof Activity) {
+			return (Activity)obj;
+		}
+		else {
+			return null;
+		}
+
+	}
+	
+	//Will return null if The Group does not exist
+	public Group getGroup(int ID) {
+<<<<<<< HEAD
+		lock.lock();
+		lock.lock();
+		//Group g = new Group(ID);
+=======
+		Group g = new Group(ID);
+>>>>>>> 1648813a6d9f39bd0715e218adbd39b38ea75cad
+		lock.lock();
+		//send(g);
+		Object obj = null;
+		try {
+			obj = ois.readObject();
+			lock.unlock();
+		} catch (ClassNotFoundException | IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		if (obj instanceof Group) {
+			return (Group)obj;
+		}
+		else {
+			return null;
+		}
+
+
+	}
+	
+	//If it returns Null then the converation does not exsist
+<<<<<<< HEAD
+	public void sendMessage(MessageObject m) {
+		send(m);
+=======
+	public Conversation getConversation(User u) {
+		lock.lock();
+		lock.lock();
+		Conversation c = new Conversation(u);
+		lock.lock();
+		send(c);
+		Object obj = null;
+		try {
+			obj = ois.readObject();
+			lock.unlock();
+		} catch (ClassNotFoundException | IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		if (obj instanceof Conversation) {
+			return (Conversation) obj;
+		} else {
+			return null;
+		}
+>>>>>>> cf9d78f37cc37c675c69a97ff017982587494ffa
+	}
+
+
+
+	public User createUser(User u) {
+		lock.lock();
+		send(new String("NewUser"));
+		send(u);
+
+		try {
+			Object obj = ois.readObject();
+			lock.unlock();
+			return (User)obj;
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+
+	public void createGroup(Group g) {
+		lock.lock();
+		send(g);
+		lock.unlock();
+	}
+
+	public void createActivity(Activity a) {
+		lock.lock();
+		send(a);
+		lock.unlock();
+	}
+	
+//////////////////////////////////////////////
+////////MAIN METHOD HERE//////////////////////
+//////////////////////////////////////////////
+
+	//If this Returns null then Something Went Wrong
+	public User Login(String username, String Password) {
+		lock.lock();
+		System.out.println(username);
+		send(username);
+		send(Password);
+		Object obj = null;
+		try {
+			obj = ois.readObject();
+			lock.unlock();
+		} catch (ClassNotFoundException | IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		if (obj instanceof User) {
+			return (User) obj;
+		} else {
+			System.out.println("login in MainClient is returning null");
+			return null;
+		}
+
+	}
+}
